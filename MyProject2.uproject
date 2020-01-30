@@ -1,0 +1,35 @@
+{
+	"FileVersion": 3,
+	"EngineAssociation": "4.22",
+	"Category": "",
+	"Description": "",
+	"Modules": [
+		{
+			"Name": "MyProject2",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"Engine"
+			]
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "Ansel",
+			"Enabled": true
+		},
+		{
+			"Name": "RuntimeMeshLoader",
+			"Enabled": true
+		},
+		{
+			"Name": "ThoughtfishCoalaPlugin",
+			"Enabled": true,
+			"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/content/bf523fe15d19423bae4e18ce537c1826"
+		},
+		{
+			"Name": "DatasmithContent",
+			"Enabled": false
+		}
+	]
+}
