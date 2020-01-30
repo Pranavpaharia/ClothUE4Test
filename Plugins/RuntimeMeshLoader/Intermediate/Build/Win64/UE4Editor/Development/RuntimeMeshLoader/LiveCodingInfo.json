@@ -1,0 +1,13 @@
+{
+	"RemapUnityFiles": 
+	{
+		"Module.RuntimeMeshLoader.cpp.obj": [
+			"LoaderBPFunctionLibrary.cpp.obj",
+			"RuntimeMeshLoader.cpp.obj"
+		],
+		"Module.RuntimeMeshLoader.gen.cpp.obj": [
+			"LoaderBPFunctionLibrary.gen.cpp.obj",
+			"RuntimeMeshLoader.init.gen.cpp.obj"
+		]
+	}
+}
