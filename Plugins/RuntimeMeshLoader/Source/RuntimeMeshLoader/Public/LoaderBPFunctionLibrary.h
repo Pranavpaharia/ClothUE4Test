@@ -79,5 +79,4 @@ public:
 	UFUNCTION(BlueprintCallable,Category="MeshLoader")
 	static FReturnedData LoadMesh(FString filepath,EPathType type= EPathType:: Absolute);
 
-	
 };

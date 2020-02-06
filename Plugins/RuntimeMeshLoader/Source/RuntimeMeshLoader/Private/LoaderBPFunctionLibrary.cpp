@@ -65,6 +65,15 @@ void FindMeshInfo(const aiScene* scene, aiNode* node, FReturnedData& result)
 				mi.UV0.Add(uv);
 			}
 
+			//UV Coordinates - inconsistent coordinates
+			if (mesh->HasTextureCoords(1))
+			{
+				FVector2D uv = FVector2D(mesh->mTextureCoords[0][j].x, -mesh->mTextureCoords[0][j].y);
+				mi.UV0.Add(uv);
+			}
+
+
+
 			//Tangent
 			if (mesh->HasTangentsAndBitangents())
 			{

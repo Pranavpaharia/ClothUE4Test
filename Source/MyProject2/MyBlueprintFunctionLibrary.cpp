@@ -5,6 +5,7 @@
 USkeletalMeshComponent* UMyBlueprintFunctionLibrary::_skelStatic;
 TArray<uint32>  UMyBlueprintFunctionLibrary::oldIndexBuffer2;
 int UMyBlueprintFunctionLibrary::oldVerticesNum;
+TArray<FVector2D> UMyBlueprintFunctionLibrary::UVArray;
 
 TArray<FVector> UMyBlueprintFunctionLibrary::AdjustClothV5(USkeletalMeshComponent * _refAvatar, USkeletalMeshComponent * _refCloth,
 	USkeletalMeshComponent * _targetAvatar, USkeletalMeshComponent * _targetCloth,
@@ -105,7 +106,7 @@ TArray<FVector> UMyBlueprintFunctionLibrary::AdjustClothV5(USkeletalMeshComponen
 					//DrawDebugPoint(_refCloth->GetOwner()->GetWorld(), childBonePosition, 10, FColor::Cyan, true, 1, 0);
 
 					FVector vec6 = vec4.ProjectOnTo(vec5);
-					_col = FColor::Green;
+					_col = FColor::Green; 
 					TArray<FHitResult> _resHit;
 					FCollisionQueryParams RV_TraceParams = FCollisionQueryParams(true);
 					RV_TraceParams.bTraceComplex = true;
@@ -424,12 +425,30 @@ void UMyBlueprintFunctionLibrary::LoadSkeletalMesh(USkeletalMeshComponent * _ref
 		UE_LOG(LogTemp, Warning, TEXT("@ Can't Find Avatar Reference"));
 		return;
 	}
+
 	USkeletalMesh *_mesh = _refAvatar->SkeletalMesh;
 	UMyBlueprintFunctionLibrary::oldVerticesNum = (int)_mesh->GetResourceForRendering()->LODRenderData[0].StaticVertexBuffers.PositionVertexBuffer.GetNumVertices();
 	if (!_importedData.bSuccess) {
 		UE_LOG(LogTemp, Warning, TEXT("@ Failed at 1"));
 		return;
 	}
+
+
+	for (FMeshInfo meshStruct : _importedData.meshInfo)
+	{
+		TArray<FVector2D> MeshStructUV = meshStruct.UV0;
+
+		for (FVector2D UVTexCoord : MeshStructUV)
+		{
+			FString str1 = TEXT("Vertex X: ") + FString::SanitizeFloat(UVTexCoord.X);
+			FString str2 = TEXT("Vertex Y: ") + FString::SanitizeFloat(UVTexCoord.Y);
+			//UE_LOG(LogTemp, Warning, TEXT(" %s  %s"),*str1,*str2);
+		}
+		
+	}
+
+	
+
 	TArray<int> bones = TArray<int>();
 
 	//UE_LOG(LogTemp, Warning, TEXT("@ _refAvatar->GetNumBones(): %d"), _refAvatar->GetNumBones());
@@ -480,14 +499,29 @@ void UMyBlueprintFunctionLibrary::LoadSkeletalMesh(USkeletalMeshComponent * _ref
 	TArray<FVector> finalVertices = TArray<FVector>();
 	TArray<FProcMeshTangent> finalTangents = TArray<FProcMeshTangent>();
 	TArray<FVector> finalNormals = TArray<FVector>();
-	TArray<FVector> finalUV0 = TArray<FVector>();
-
+	TArray<FVector2D> finalUV0 = TArray<FVector2D>();
+	
+	
+	
+	if (_importedData.meshInfo.IsValidIndex(0))
+	{
+		//finalUV0 = TArray<FVector2D>(_importedData.meshInfo[0].UV0);
+	}
+	
+		
+		
 	for (int i = 0; i < _importedData.meshInfo.Num(); i++)
 	{
 		finalVertices.Append(_importedData.meshInfo[i].Vertices);
 		finalTangents.Append(_importedData.meshInfo[i].Tangents);
 		finalNormals.Append(_importedData.meshInfo[i].Normals);
-		//finalUV0.Append(_importedData.meshInfo[i].);
+		finalUV0.Append(_importedData.meshInfo[i].UV0);
+		UMyBlueprintFunctionLibrary::UVArray.Append(_importedData.meshInfo[i].UV0);
+		for (int j = 0; j < finalVertices.Num(); j++)
+		{
+
+		}
+
 		TArray<FString> _keys = TArray<FString>();
 		_importedData.meshInfo[i].BoneInfo.GetKeys(_keys);
 		UE_LOG(LogTemp, Warning, TEXT("@ Mesh: %d"), i);
@@ -498,8 +532,11 @@ void UMyBlueprintFunctionLibrary::LoadSkeletalMesh(USkeletalMeshComponent * _ref
 	
 	UE_LOG(LogTemp, Warning, TEXT("@ oldVerticesNum: %d"), UMyBlueprintFunctionLibrary::oldVerticesNum);
 	UE_LOG(LogTemp, Warning, TEXT("@ boneName: %d"), finalVertices.Num());
-	for (int i = 0; i < finalVertices.Num(); i++) {
-		if (i < UMyBlueprintFunctionLibrary::oldVerticesNum) {
+	UE_LOG(LogTemp, Warning, TEXT("@ Final UV Num: %d"), finalUV0.Num());
+	for (int i = 0; i < finalVertices.Num(); i++) 
+	{
+		if (i < UMyBlueprintFunctionLibrary::oldVerticesNum)
+		{
 			FVector &v = _mesh->GetResourceForRendering()->LODRenderData[0].StaticVertexBuffers.PositionVertexBuffer.VertexPosition(i);
 			v = finalVertices[i].RotateAngleAxis(180, FVector(1, 0, 0));
 			_mesh->GetResourceForRendering()->LODRenderData[0].StaticVertexBuffers.StaticMeshVertexBuffer.SetVertexTangents(i,
@@ -507,7 +544,8 @@ void UMyBlueprintFunctionLibrary::LoadSkeletalMesh(USkeletalMeshComponent * _ref
 				(FVector::CrossProduct(finalNormals[i], finalTangents[i].TangentX).RotateAngleAxis(180, FVector(1, 0, 0))),
 				(finalNormals[i]).RotateAngleAxis(180, FVector(1, 0, 0)));
 		}
-		else {
+		else 
+		{
 			FStaticMeshBuildVertex a1;
 			a1.Position = finalVertices[i].RotateAngleAxis(180, FVector(1, 0, 0));
 			_mesh->GetResourceForRendering()->LODRenderData[0].StaticVertexBuffers.PositionVertexBuffer.AppendVertices(&a1, 1);
@@ -516,15 +554,59 @@ void UMyBlueprintFunctionLibrary::LoadSkeletalMesh(USkeletalMeshComponent * _ref
 			a1.TangentY = (FVector::CrossProduct(finalNormals[i], finalTangents[i].TangentX)).RotateAngleAxis(180, FVector(1, 0, 0));
 			a1.TangentZ = (finalNormals[i]).RotateAngleAxis(180, FVector(1, 0, 0));
 
-			for (int j = 0; j < (int)_mesh->GetResourceForRendering()->LODRenderData[0].StaticVertexBuffers.StaticMeshVertexBuffer.GetNumTexCoords(); j++) {
-				a1.UVs[j] = _mesh->GetResourceForRendering()->LODRenderData[0].StaticVertexBuffers.StaticMeshVertexBuffer.GetVertexUV(0, j);
-			}
+			/*for (int j = 0; j < (int)_mesh->GetResourceForRendering()->LODRenderData[0].StaticVertexBuffers.StaticMeshVertexBuffer.GetNumTexCoords(); j++) {
+				a1.UVs[j] = UMyBlueprintFunctionLibrary::UVArray[j];
+			}*/
+			/*for (int j = 0; j < (int)_mesh->GetResourceForRendering()->LODRenderData[0].StaticVertexBuffers.StaticMeshVertexBuffer.GetNumTexCoords(); j++)
+			{
+				_mesh->GetResourceForRendering()->LODRenderData[0].StaticVertexBuffers.StaticMeshVertexBuffer.SetVertexUV(j, 0, UMyBlueprintFunctionLibrary::UVArray[j]);
+			}*/
+			
 
 			_mesh->GetResourceForRendering()->LODRenderData[0].StaticVertexBuffers.StaticMeshVertexBuffer.AppendVertices(&a1, 1);
 		}
+		
+		//if (finalUV0.IsValidIndex(i))
+		
+		//	_mesh->GetResourceForRendering()->LODRenderData[0].StaticVertexBuffers.StaticMeshVertexBuffer.SetVertexUV(i,0,finalUV0[i]);
+		
 	}
+	int32 vertexNum = _mesh->GetResourceForRendering()->LODRenderData[0].StaticVertexBuffers.StaticMeshVertexBuffer.GetNumVertices();
+	TArray<FVector2D> vec2dArray0 = _importedData.meshInfo[0].UV0;
+	TArray<FVector2D> vec2dArray1 = _importedData.meshInfo[1].UV0;
+	TArray<FVector2D> vec2dArray2 = _importedData.meshInfo[2].UV0;
+	TArray<FVector2D> vec2dArray3 = _importedData.meshInfo[3].UV0;
+	//for (int i = 0; i < vertexNum; i++)
+	//{
+	////	if(vec2dArray0.IsValidIndex(i))
+	//		_mesh->GetResourceForRendering()->LODRenderData[0].StaticVertexBuffers.StaticMeshVertexBuffer.SetVertexUV(i, 0, vec2dArray0[i]);
+	//}
+	//for (int i = 0; i < vertexNum; i++)
+	//{
+	////	if (vec2dArray1.IsValidIndex(i))
+	//		_mesh->GetResourceForRendering()->LODRenderData[0].StaticVertexBuffers.StaticMeshVertexBuffer.SetVertexUV(i, 0, vec2dArray1[i]);
+	//}
+	//for (int i = 0; i < vertexNum; i++)
+	//{
+	////	if (vec2dArray2.IsValidIndex(i))
+	//		_mesh->GetResourceForRendering()->LODRenderData[0].StaticVertexBuffers.StaticMeshVertexBuffer.SetVertexUV(i, 0, vec2dArray2[i]);
+	//}
+	//for (int i = 0; i < vertexNum; i++)
+	//{
+	////	if (vec2dArray3.IsValidIndex(i))
+	//		_mesh->GetResourceForRendering()->LODRenderData[0].StaticVertexBuffers.StaticMeshVertexBuffer.SetVertexUV(i, 0, vec2dArray3[i]);
+	//}
+	//_mesh->Materials[0].UVChannelData;
 
-	_mesh->Materials[0].UVChannelData;
+	/*for (FMeshInfo meshStruct : _importedData.meshInfo)
+	{
+
+		for (int i = 0; i < meshStruct.UV0.Num(); i++)
+		{
+			_mesh->GetResourceForRendering()->LODRenderData[0].StaticVertexBuffers.StaticMeshVertexBuffer.SetVertexUV(i, 0, meshStruct.UV0[i]);
+		}
+	}*/
+
 
 	TArray<TSkinWeightInfo<true>> InWeights;
 
@@ -658,12 +740,41 @@ void UMyBlueprintFunctionLibrary::LoadSkeletalMesh(USkeletalMeshComponent * _ref
 	UE_LOG(LogTemp, Warning, TEXT("CopyIndexBuffer 2 %d"), _mesh->GetResourceForRendering()->LODRenderData[0].MultiSizeIndexContainer.GetIndexBuffer()->Num());
 	UE_LOG(LogTemp, Warning, TEXT("CopyIndexBuffer 3 %d"), UMyBlueprintFunctionLibrary::oldIndexBuffer2.Num());
 
+	
+	
+	
+	FStaticMeshVertexBuffers& vertexBuffer = _mesh->GetResourceForRendering()->LODRenderData[0].StaticVertexBuffers;
+
+	int32 vertexTextCoords = vertexBuffer.StaticMeshVertexBuffer.GetNumTexCoords();
+	UE_LOG(LogTemp, Warning, TEXT("@ Static Mesh Vertex Buffer TexCoordsNum %d"), vertexTextCoords);
+
+	int32 vertexVertices = vertexBuffer.StaticMeshVertexBuffer.GetNumVertices();
+	UE_LOG(LogTemp, Warning, TEXT("@ Static Mesh Vertex Buffer Vertices %d"), vertexVertices);
+
+	for (int i = 0; i < vertexVertices; i++)
+	{
+		FVector2D vec2D = vertexBuffer.StaticMeshVertexBuffer.GetVertexUV(i, 0);
+		FString str1 = FString::SanitizeFloat(vec2D.X);
+		FString str2 = FString::SanitizeFloat(vec2D.Y);
+		//UE_LOG(LogTemp, Warning, TEXT("@ Vertex X: %s  Y: %s"), *str1, *str2);
+	}
+
+
+	/*for (int j = 0; j < (int)_mesh->GetResourceForRendering()->LODRenderData[0].StaticVertexBuffers.StaticMeshVertexBuffer.GetNumTexCoords(); j++)
+	{
+		_mesh->GetResourceForRendering()->LODRenderData[0].StaticVertexBuffers.StaticMeshVertexBuffer.SetVertexUV(j, 0, UMyBlueprintFunctionLibrary::UVArray[j]);
+	}*/
+	
+	
+	
 	UMyBlueprintFunctionLibrary::_skelStatic = _refAvatar;
 	_mesh->ReleaseResources();
 	_mesh->InitResources();
 	//_mesh->Materials[0].UV
 	//_mesh->bHasVertexColors = 0;
-
+	ReadSkeletalMesh();
+	
+	
 #if WITH_EDITOR
 #else
 	ENQUEUE_UNIQUE_RENDER_COMMAND_ONEPARAMETER(_skelStatic, USkeletalMeshComponent*, USkeletalMeshComponent, _skelStatic,
@@ -680,16 +791,53 @@ void UMyBlueprintFunctionLibrary::LoadSkeletalMesh(USkeletalMeshComponent * _ref
 }
 
 
-void UMyBlueprintFunctionLibrary::ReadSkeletalMesh(USkeletalMeshComponent * _targetSkeletalMesh)
+void UMyBlueprintFunctionLibrary::ReadSkeletalMesh()
 {
 	UE_LOG(LogTemp, Warning, TEXT("@ Reading Skeletal Mesh Details"));
 
-	TArray<UMaterialInterface*> _LMaterialInterfaceList = _targetSkeletalMesh->GetMaterials();
+//	TArray<UMaterialInterface*> _LMaterialInterfaceList = _targetSkeletalMesh->GetMaterials();
 	
-	for (UMaterialInterface* matInterface : _LMaterialInterfaceList)
-	{
+	USkeletalMesh* _mesh = _skelStatic->SkeletalMesh;
 
+//	FString _sNum
+
+
+
+	int32 texCordNumber = _mesh->GetResourceForRendering()->LODRenderData[0].GetNumTexCoords();
+
+	UE_LOG(LogTemp, Warning, TEXT("@ Texture Coordinate Numbers %d"), texCordNumber);
+
+    int32 nvertices = _mesh->GetResourceForRendering()->LODRenderData[0].GetNumVertices();
+
+	UE_LOG(LogTemp, Warning, TEXT("@ Texture Coordinate Vertices %d"), nvertices);
+
+	FStaticMeshVertexBuffers& vertexBuffer =  _mesh->GetResourceForRendering()->LODRenderData[0].StaticVertexBuffers;
+
+	int32 vertexTextCoords = vertexBuffer.StaticMeshVertexBuffer.GetNumTexCoords();
+	UE_LOG(LogTemp, Warning, TEXT("@ Static Mesh Vertex Buffer TexCoordsNum %d"), vertexTextCoords);
+
+	int32 vertexVertices = vertexBuffer.StaticMeshVertexBuffer.GetNumVertices();
+	UE_LOG(LogTemp, Warning, TEXT("@ Static Mesh Vertex Buffer Vertices %d"), vertexVertices);
+
+	TArray<FVector2D> Array2D;// = TArray<FVector2D>();
+	Array2D.Reserve(vertexVertices);
+	UMyBlueprintFunctionLibrary::UVArray.Reserve(vertexVertices);
+	for (int i = 0; i < vertexVertices; i++)
+	{
+		/*FVector2D vec2D = vertexBuffer.StaticMeshVertexBuffer.GetVertexUV(i, 0);
+		UMyBlueprintFunctionLibrary::UVArray.Emplace(vec2D);
+		Array2D.Emplace(vec2D);
+		FString str1 = FString::SanitizeFloat(vec2D.X);
+		FString str2 = FString::SanitizeFloat(vec2D.Y);*/
+		//_mesh->GetResourceForRendering()->LODRenderData[0].StaticVertexBuffers.StaticMeshVertexBuffer.SetUseFullPrecisionUVs(true);
+		_mesh->GetResourceForRendering()->LODRenderData[0].StaticVertexBuffers.StaticMeshVertexBuffer.SetVertexUV(i, 0, UMyBlueprintFunctionLibrary::UVArray[i]);
+		
+		//UE_LOG(LogTemp, Warning, TEXT("@ Vertex X: %s  Y: %s"),*str1,*str2);
 	}
+
+	//UVArray = Array2D;
+	
+
 
 }
 

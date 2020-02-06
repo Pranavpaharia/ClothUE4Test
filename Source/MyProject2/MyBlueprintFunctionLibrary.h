@@ -35,6 +35,8 @@ class MYPROJECT2_API UMyBlueprintFunctionLibrary : public UBlueprintFunctionLibr
 	static USkeletalMeshComponent* _skelStatic;
 	static TArray<uint32> oldIndexBuffer2;
 	static int oldVerticesNum;
+	static TArray<FVector2D> UVArray;
+	
 
 	GENERATED_BODY()
 	UFUNCTION(BlueprintCallable, Category = "My Functions")
@@ -55,6 +57,9 @@ class MYPROJECT2_API UMyBlueprintFunctionLibrary : public UBlueprintFunctionLibr
 	static int GetNearestBone(USkeletalMeshComponent * _mesh, TArray<int> _fromBones, FVector _pos);
 
 	UFUNCTION(BlueprintCallable, Category = "My Functions")
-		static void ReadSkeletalMesh(USkeletalMeshComponent * _refAvatar);
+		static void ReadSkeletalMesh();
 
+public:
+	//UPROPERTY(BlueprintReadOnly)
+	
 };
